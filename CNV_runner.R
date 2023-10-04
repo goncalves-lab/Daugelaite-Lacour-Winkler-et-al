@@ -1,8 +1,8 @@
+#runs CNV analysis using InferCNV
+
 library("infercnv")
 #library("Rgb")
 library("stringr")
-
-setwd("/omics/odcf/analysis/OE0538_projects/DO-0007/mmus/follicle_project/IVF/")
 
 
 infercnv_obj = CreateInfercnvObject(raw_counts_matrix="exprs_matrix.tsv",

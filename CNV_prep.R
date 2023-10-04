@@ -1,8 +1,10 @@
+#produces all files which are necessary for CNV analysis
+
 library("infercnv")
 library("Rgb")
 library("stringr")
 
-ann_db <- read.gtf("/omics/groups/OE0433/internal/ivana/gencode.vM28.annotation.gtf")
+ann_db <- read.gtf("gencode.vM28.annotation.gtf")
 ann_db <- ann_db[ann_db$feature=="gene",]
 ann_db <- ann_db[,c(1,4,5,9,11)]
 ann_db$gene_id <- str_replace(ann_db$gene_id,
@@ -10,12 +12,11 @@ ann_db$gene_id <- str_replace(ann_db$gene_id,
                replacement = "")
 ann_db <- ann_db[,c(4,1,2,3)]
 
-setwd("/omics/odcf/analysis/OE0538_projects/DO-0007/mmus/follicle_project/IVF/classifier/")
-load("gc_class.Rdata")
+load("gc_class.Rdata") #produced using classifier scripts
 bad <- names(gc_class)[gc_class=="YS_bad"]
 bad <- gsub("gc", "e", bad)
 
-load("/omics/odcf/analysis/OE0538_projects/DO-0007/mmus/follicle_project/data/20230523010_44/IVF.RData")
+load("IVF.RData") #produced in scenic.R script
 
 good <- names(gc_class)[gc_class=="YS_good"]
 good <- gsub("gc", "e", good)
@@ -23,7 +24,6 @@ good <- gsub("gc", "e", good)
 bad <- data.frame(label=bad, condition="bad")
 good <- data.frame(label=good, condition="good")
 metadata <- rbind(bad, good)
-
 
 exprs_matrix <- IVF[["RNA"]]@counts
 
@@ -46,8 +46,6 @@ exprs_matrix <- exprs_matrix[rownames(exprs_matrix)%in%ann_db$gene_id,]
 exprs_matrix <- exprs_matrix[match(ann_db$gene_id,rownames(exprs_matrix)),]
 write.table(as.data.frame(exprs_matrix), "exprs_matrix.tsv", quote=F, row.names = T, col.names = T,  sep = "\t")
 write.table(metadata, "metadata.tsv", quote=F, row.names = F, col.names = F,  sep = "\t")
-#rownames(ann_db) <- ann_db$gene_id
-#ann_db <- ann_db[,2:4]
 write.table(ann_db, "ann_db.tsv", quote=F, col.names = F, row.names = F, sep = "\t")
 
 

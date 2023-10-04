@@ -1,3 +1,4 @@
+#data prep for gene based classifier
 library(Seurat)
 library(ggplot2)
 library(caret)
@@ -5,12 +6,12 @@ library(glmmTMB)
 
 ############################
 #gene matrix preparation
-
-genes <- read.table("/omics/odcf/analysis/OE0538_projects/DO-0007/mmus/follicle_project/cell_com/SO_quality_prediction/quality_marker_genes.tsv",
+#produced using dge.R script
+genes <- read.table("quality_marker_genes.tsv",
                     sep=",", header = T, row.names = 1)
 
-load("/omics/odcf/analysis/OE0538_projects/DO-0007/mmus/follicle_project/data/20230523010_44/IVF.RData")
-load("/omics/odcf/analysis/OE0538_projects/DO-0007/mmus/follicle_project/merged_19700_21475_22151/ovulation.Rdata")
+load("IVF.RData") #produced using scenic.R script
+load("ovulation.Rdata")
 
 seurat_m <- merge(IVF, ovulation, merge.data=F)
 seurat_m[["CellName"]] <- colnames(seurat_m)
@@ -41,7 +42,7 @@ comboInfo <- findLinearCombos(exprs_matrix)
 
 #splitting dataset
 
-load("/omics/odcf/analysis/OE0538_projects/DO-0007/mmus/follicle_project/merged_19700_21475_22151/clusters_Y_consensus.Rdata")
+load("clusters_Y_consensus.Rdata") #consensus clusters
 clusters_consensus <- clusters_consensus[!is.na(clusters_consensus)]
 clusters_consensus <- clusters_consensus[grep("SO", names(clusters_consensus))]
 clusters_consensus=droplevels(clusters_consensus)
@@ -65,7 +66,6 @@ exprs_testTransformed <- predict(preProcValues, exprs_Test)
 exprs_ivf <- exprs_matrix[grep("3M", rownames(exprs_matrix), invert=T),]
 exprs_ivfTransformed <- predict(preProcValues, exprs_ivf)
 
-setwd("/omics/odcf/analysis/OE0538_projects/DO-0007/mmus/follicle_project/IVF/classifier")
 
 save(exprs_ivfTransformed, file="exprs_ivfTransformed.Rdata")
 

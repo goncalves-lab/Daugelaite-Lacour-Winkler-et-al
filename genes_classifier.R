@@ -1,5 +1,7 @@
+#this script trains and performs classification of GCs cells in SN and S cells using DEG expression
 library(caret)
 
+#produced in data_preparation_genes.R script
 load("exprs_trainTransformed.Rdata")
 load("exprs_testTransformed.Rdata")
 
@@ -61,7 +63,7 @@ svmControl <- trainControl(method = "repeatedcv",
 ###############
 
 #SVM with Linear Kernel
-
+#different algorithms were tested, based on perfomance stats SVM with Liner Kernel was chosen
 set.seed(825)
 exprs_svm <- train(label ~ ., data = exprs_trainTransformed, 
                  method = "svmLinear", 

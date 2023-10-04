@@ -1,3 +1,4 @@
+#data prep for tf-based classifier
 library(Seurat)
 library(ggplot2)
 library(caret)
@@ -5,19 +6,19 @@ library(glmmTMB)
 
 ############################
 #TFs data preparation
-
-auc_df <- read.csv("/omics/odcf/analysis/OE0538_projects/DO-0007/mmus/follicle_project/IVF/auc_matrix_joined.csv", 
+#produced in scenic.R script
+auc_df <- read.csv("auc_matrix_joined.csv", 
                    row.names = 1)
 rownames(auc_df) <- gsub("\\(.*\\)", "", rownames(auc_df))
 rownames(auc_df) <- gsub("_extended", "", rownames(auc_df))
 
-load("/omics/odcf/analysis/OE0538_projects/DO-0007/mmus/follicle_project/merged_19700_21475_22151/SCENIC/tfs.Rdata")
+load("tfs.Rdata")#produced in scenic_post.R script
 auc_df <- as.data.frame(t(auc_df))
 colnames(auc_df) <- gsub(" ", "", colnames(auc_df))
 auc_df <- auc_df[,colnames(auc_df)%in%tfs]
 
 #identifying TF which have significantly different activity in SO good and bad
-load("/omics/odcf/analysis/OE0538_projects/DO-0007/mmus/follicle_project/merged_19700_21475_22151/clusters_Y_consensus.Rdata")
+load("clusters_Y_consensus.Rdata") #consensus clusters
 clusters_consensus <- clusters_consensus[!is.na(clusters_consensus)]
 clusters_consensus <- clusters_consensus[grep("SO", names(clusters_consensus))]
 clusters_consensus=droplevels(clusters_consensus)
@@ -26,7 +27,7 @@ auc_tf <- auc_df[rownames(auc_df)%in%names(clusters_consensus),]
 clusters_df <- data.frame(cells=names(clusters_consensus), label=clusters_consensus)
 auc_tf <- merge(auc_tf, clusters_df, by.x=0, by.y="cells")
 
-load("/omics/odcf/analysis/OE0538_projects/DO-0007/mmus/follicle_project/merged_19700_21475_22151/ovulation.Rdata")
+load("ovulation.Rdata") #produced using scenic.R script
 mouse_df <- data.frame(cells=colnames(ovulation), mouse=ovulation$mouse)
 auc_tf <- merge(auc_tf, mouse_df, by.x="Row.names", by.y="cells")
 
@@ -75,8 +76,6 @@ auc_testTransformed <- predict(preProcValues, auc_Test)
 
 auc_ivf <- auc_df[grep("3M", rownames(auc_df), invert=T),]
 auc_ivfTransformed <- predict(preProcValues, auc_ivf)
-
-setwd("/omics/odcf/analysis/OE0538_projects/DO-0007/mmus/follicle_project/IVF/classifier")
 
 save(auc_ivfTransformed, file="auc_ivfTransformed.Rdata")
 

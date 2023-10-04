@@ -1,3 +1,4 @@
+#calculating DEGs using pseudobulk approach
 library(DESeq2)
 library(biomaRt)
 library(ggplot2)
@@ -159,10 +160,6 @@ volcano_plotteR_inverse <- function(dge_df, title){
 #############################################################################
 
 #reading in count data
-setwd("merged_19700_21475_22151/")
-#reads_df <- file_readeR("~/scRNA-seq/ovulation/merged_19700_21475_22151/reads_all_samples.csv/")
-#reads_df$gene_names <- gsub("\\..*","", reads_df$gene_names)
-#rownames(reads_df) <- reads_df$gene_names
 reads_df <- read.table("reads_all_samples.tsv", sep=",", row.names = 1, header=T)
 #reading in metadata
 sample_list <- read.csv("metadata_filtered.csv", header = T)
@@ -201,14 +198,6 @@ dge_oc_age <- ensembleR(dge_oc_age, dge_oc_age$Gene_id, "Gene_id")
 
 rld_oc <- normalizeR(summed_df_oc, summed_sample_list)
 
-volcano_plotteR(dge_oc_ov[,c(20, 2, 3, 7)], "OC  Y-NO vs. Y-SO")
-volcano_plotteR(dge_oc_ov[,c(20, 9, 13)], "OC O-NO vs. O-SO")
-volcano_plotteR(dge_oc_ov[,c(20, 15, 19)], "OC  O vs. Y - Ov")
-
-
-volcano_plotteR(dge_oc_age[,c(20, 3, 7)], "OC  NO-Y vs. NO-O")
-volcano_plotteR(dge_oc_age[,c(20, 9, 13)], "OC SO-Y vs. SO-O")
-volcano_plotteR(dge_oc_age[,c(20, 15, 19)], "OC NO vs. SO - Age")
 
 ######################### 
 #performing dge on GCs
@@ -235,44 +224,12 @@ dge_gc_age <- ensembleR(dge_gc_age, dge_gc_age$Gene_id, "Gene_id")
 
 rld_gc <- normalizeR(summed_df_gc, summed_sample_list)
 
-volcano_plotteR(dge_gc_ov[,c(20, 2, 3, 7)], "GC  Y-NO vs. Y-SO")
-volcano_plotteR(dge_gc_ov[,c(20, 9, 13)], "GC O-NO vs. O-SO")
-volcano_plotteR(dge_gc_ov[,c(20, 15, 19)], "GC  O vs. Y - Ov")
-
-
-volcano_plotteR(dge_gc_age[,c(20, 3, 7)], "GC  NO-Y vs. NO-O")
-volcano_plotteR(dge_gc_age[,c(20, 9, 13)], "GC SO-Y vs. SO-O")
-volcano_plotteR(dge_gc_age[,c(20, 15, 19)], "GC NO vs. SO - Age")
 
 write.csv(dge_oc_age, "dge_oc_age.csv", row.names = F, quote = F)
 write.csv(dge_oc_ov, "dge_oc_ov.csv", row.names = F, quote = F)
 write.csv(dge_gc_age, "dge_gc_age.csv", row.names = F, quote = F)
 write.csv(dge_gc_ov, "dge_gc_ov.csv", row.names = F, quote = F)
 
-#############
-#plotting MA plot
-#GC
-dge_ov <- read.csv("dge_gc_ov.csv", header=T)
-
-dge_ov <- dge_ov[,c(1:3,7)]
-colnames(dge_ov) <- c("name", "baseMean", "log2FoldChange", "padj")
-volcano_plotteR_inverse(dge_ov, "GC N-Y vs. S-Y")
-
-#oC
-dge_ov <- read.csv("dge_oc_ov.csv", header=T)
-
-dge_ov <- dge_ov[,c(1:3,7)]
-colnames(dge_ov) <- c("name", "baseMean", "log2FoldChange", "padj")
-volcano_plotteR(dge_ov, "OC N-Y vs. S-Y")
 
 
-######################################
-summed_sample_list <- summed_sample_list[summed_sample_list$age=="O",]
-summed_df_gc <- summed_df_gc[,colnames(summed_df_gc)%in%rownames(summed_sample_list)]
-dds <- DESeqDataSetFromMatrix(countData=summed_df_gc, colData=summed_sample_list, design= ~ ovulation)
-# filtering out genes with 0 counts
-dds <- dds[rowSums(counts(dds)) > 1, ]
-# differential expression analysis
-dds <- DESeq(dds)
-res_1_gc <- as.data.frame(results(dds, contrast=c("ovulation","SO","NO")))
 
