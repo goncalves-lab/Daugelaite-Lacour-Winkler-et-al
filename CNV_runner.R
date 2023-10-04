@@ -1,0 +1,19 @@
+library("infercnv")
+#library("Rgb")
+library("stringr")
+
+setwd("/omics/odcf/analysis/OE0538_projects/DO-0007/mmus/follicle_project/IVF/")
+
+
+infercnv_obj = CreateInfercnvObject(raw_counts_matrix="exprs_matrix.tsv",
+                                    annotations_file="metadata.tsv",
+                                    delim="\t",
+                                    gene_order_file="ann_db.tsv",
+                                    ref_group_names=c("normal"))
+infercnv_obj = infercnv::run(infercnv_obj,
+                             cutoff=1,  # use 1 for smart-seq, 0.1 for 10x-genomics
+                             out_dir="output_dir_sub",  # dir is auto-created for storing outputs
+                             denoise=T, HMM_report_by="cell",
+                             HMM=T, analysis_mode='cells'
+)
+
