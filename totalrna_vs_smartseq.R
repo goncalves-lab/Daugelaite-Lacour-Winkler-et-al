@@ -13,14 +13,14 @@ ensembl=useMart(biomart="ENSEMBL_MART_ENSEMBL",host="www.ensembl.org",dataset="m
 ensemnl_list=getBM(attributes=c("ensembl_gene_id","external_gene_name", "gene_biotype"), mart=ensembl)
 
 #total RNA data
-load("tot_RNA.RData") # total RNA-seq Seurat object made by the script XXXXXXXX
+load("tot_RNA.RData") # total RNA-seq Seurat object made by the script create_seurat_totalRNA.R
 
 reads_tot = tot_RNA@assays$SCT@counts
 rownames(reads_tot) = sapply(rownames(reads_tot), function(x){strsplit(x, "-")[[1]][2]})
 
 
 #smart-seq2 data
-load("ovulation.Rdata") # SMART-seq2 Seurat object made by the script XXXXXXXX
+load("ovulation.Rdata") # SMART-seq2 Seurat object made by the script create_seurat_age_ov.R
 
 #Making the pairing metadata table
 paired_id = data.frame()
@@ -34,7 +34,9 @@ for (i in 1:length(gc_list)) {
 colnames(paired_id) = c("GC", "OC")
 paired_id$group = paste(ovulation$age[paired_id$GC],ovulation$ovulation[paired_id$GC],sep="_")
 
-gr = c("Y_NO", "Y_SO")
+gr = c("Y_NO", "Y_SO") # Pick the groups to compare
+
+#Changing to gene name instead of ensemblID
 reads_smart = as.matrix(ovulation@assays$SCT@counts)
 rownames(reads_smart) = ensemnl_list$external_gene_name[match(rownames(reads_smart), ensemnl_list$ensembl_gene_id)]
 
@@ -82,6 +84,7 @@ norm_matr_tot = cbind(log2((1+matr_tot[, grepl("NO", colnames(matr_tot))])/mean_
 
 norm_matr = cbind(norm_matr_smart, norm_matr_tot)
 
+#Computing graphical parameters
 gaps_row = cumsum(c(length(polyA), length(deA), length(degraded), length(up_genes), length(constant_genes)))
 gaps_col = ncol(norm_matr_smart)
 

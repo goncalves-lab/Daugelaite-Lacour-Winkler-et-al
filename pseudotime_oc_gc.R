@@ -1,20 +1,18 @@
-#Pseudotime analysis of mouse embryos
+#Pseudotime analysis for oocytes and granulosa cells
 
 
-
-#-------Libraries-----------
+#--------Libraries---------
 
 library(Seurat)
 library(SingleCellExperiment)
 library(slingshot)
 library(uwot)
 library(mclust, quietly = TRUE)
-library(biomaRt)
-suppressPackageStartupMessages(library(magrittr))
-library(factoextra)
 library(RColorBrewer)
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(magrittr))
 
-#-------Functions-----------
+#-------Functions----------
 
 loadRData <- function(fileName){
   #loads an RData file, and returns it
@@ -32,6 +30,9 @@ ensembleR=function(val,attr,filt){
 subseteR<- function(seurat_obj, gene_subset){
   cell_counts <-  as.matrix(seurat_obj[["SCT"]]@counts)
   cell_counts <- cell_counts[rownames(cell_counts)%in%gene_subset,]
+  
+  colnames(cell_counts) <- gsub("_rep", "", colnames(cell_counts))
+  colnames(cell_counts) <- gsub("S012M", "SO12M", colnames(cell_counts))
   sce <- SingleCellExperiment(list(logcounts = cell_counts))
   return(sce)
 }
@@ -50,9 +51,20 @@ reductoR <- function(sce){ #runs different dimensionality reductions and cluster
   cl2 <- kmeans(rd1, centers = 4)$cluster
   colData(sce)$kmeans <- cl2
   print(plot(rd1, col = brewer.pal(9,"Set1")[cl2], pch=16, asp = 1))
-  colData(sce)$group = as.factor(embryos$group[colnames(sce)])
-  print(plot(rd1, col = brewer.pal(9,"Set1")[as.factor(embryos$group[colnames(sce)])], pch=16, asp = 1))
   return(sce)
+}
+
+label_makeR <- function(sce){
+  label_df <- as.data.frame(rownames(reducedDims(sce)$PCA))
+  label_df$label <- substr(label_df$`rownames(reducedDims(sce)$PCA)`,1,nchar(label_df$`rownames(reducedDims(sce)$PCA)`)-2)
+  
+  label_df %<>% mutate(color_group = case_when(
+    label == "NO12MOC" ~ brewer.pal(11, "Spectral")[10],
+    label == "NO3MOC" ~ brewer.pal(11, "Spectral")[8],
+    label == "SO12MOC" ~ brewer.pal(11, "Spectral")[2],
+    label == "SO3MOC" ~ brewer.pal(11, "Spectral")[5]
+  ))
+  return(label_df)
 }
 
 
@@ -72,8 +84,8 @@ ploteR <- function(sce){ #plot the results from slingshot
                 panel.background = element_blank())+
           geom_smooth(aes(x=PC1, y=PC2), data=curve_sce, level=0, size=2)+
           scale_colour_gradientn(colors = brewer.pal(11, "Spectral")[11:1]))
-  
-  pca_pt$group_label = embryos$group[rownames(pca_pt)]
+  pca_pt$label <- row.names(pca_pt)  
+  pca_pt$group_label <- substr(pca_pt$label, 1, nchar(pca_pt$label)-2)
   print(ggplot(pca_pt, aes(x=PC1, y=PC2, color= pca_pt$group_label)) + geom_point(size=5)+
           theme_bw(base_size = 14) + 
           theme(legend.position = "right")+
@@ -86,8 +98,7 @@ ploteR <- function(sce){ #plot the results from slingshot
                 panel.background = element_blank())+
           geom_smooth(aes(x=PC1, y=PC2), data=curve_sce, level=0, color="black", size=2)+
           scale_colour_manual(values=brewer.pal(11, "Spectral")[c(2,4,8,11)]))
-  
-  print(ggplot(pca_pt, aes(x= group_label, y=pseudotime_1, color= group_label)) + geom_point(size=5)+
+  print(ggplot(pca_pt, aes(x= group_label, y=pseudotime_1)) + geom_point(size=5, color="black")+
           theme_bw(base_size = 14) + 
           theme(legend.position = "right")+
           theme(legend.text=element_text(size=28),legend.title = element_blank())+labs(x="", y="pseudotime")+
@@ -114,50 +125,28 @@ ks_testeR <- function(pt, comp_list){ #test difference between groups
   return(res)
 }
 
+#--------Data---------
 
-#-------Data------------
+ovulation<- loadRData("ovulation.Rdata") #Seurat object created by script create_seurat_age_ov.R
+Idents(ovulation) <- ovulation$cell
+ovulation_oc <- subset(ovulation, idents="GC") #Here select the cell type you want to study (OC or GC)
 
-IVF = loadRData("IVF.RData") #Seurat object created by script create_seurat_ivf_mouse.R
-Idents(IVF) = IVF$cell
-embryos = subset(IVF, idents="morula")
-embryos = SCTransform(embryos)
-embryos = RunPCA(embryos, npcs = 10)
-stopped = c("so75e3", "so75e6", "so75e12", "so75e17", "so76e14", "so80e14", "so80e20", "so81e4")
-embryos$development = ifelse(colnames(embryos)%in%stopped, "stopped", "morula")
-embryos$development["so76e11"] = "unclear" #this specific embryo could not be staged accurately
+#-------Main----------
 
-load("gc_class.Rdata") # class prediction from classifier
-names(gc_class) = gsub("gc", "e", names(gc_class))
-embryos$group = gc_class[colnames(embryos)]
-embryos$group[embryos$development=="stopped"] = "stopped"
-embryos$group[embryos$group=="NA"] = "unclassified"
-embryos$group[embryos$development=="unclear"] = NA
+var_genes <- ovulation_oc@assays$SCT@var.features
 
-#-------Main-----------
-
-ensembl_mouse=useMart(biomart="ENSEMBL_MART_ENSEMBL",host="www.ensembl.org",dataset="mmusculus_gene_ensembl")
-ensemnl_list_mouse=getBM(attributes=c("ensembl_gene_id","external_gene_name", "hsapiens_homolog_associated_gene_name"), mart=ensembl_mouse)
-
-
-#variable genes
-var_genes <- embryos@assays$SCT@var.features
-
-sce_hvg <- subseteR(embryos, var_genes)
+sce_hvg <- subseteR(ovulation_oc, var_genes)
 
 sce_hvg <- reductoR(sce_hvg)
 
 sce_hvg <- slingshot(sce_hvg, clusterLabels = 'GMM', reducedDim = 'PCA')
 
+pca_pt <- as.data.frame(reducedDims(sce_hvg)$PCA)
+
 pt_hvg <- ploteR(sce_hvg)
 
 
-# to_rm = which(pt_hvg$pseudotime_1<20 & pt_hvg$group_label=="YS_good")
-# stripchart(pt_hvg$pseudotime_1[-to_rm] ~ factor(pt_hvg$group_label[-to_rm], levels = c("YS_good", "NA", "YS_bad", "stopped"), labels = c("S1", "unclassified", "S2", "stopped\ndeveloping")),
-#            pch = 20, method = "jitter", xlab = "pseudotime", las = 1)
-# segments(x0 = aggregate(pseudotime_1 ~ group_label, pt_hvg[-to_rm,], mean)$pseudotime_1, y0 = c(1.8, 3.8, 2.8, 0.8), y1 = c(2.2, 4.2, 3.2, 1.2), col = "red")
-
-comp_list <- list(c("YS_bad","YS_good"))
+comp_list <- list(c("NO3MOC","NO12MOC"), c("NO3MOC", "SO3MOC"), c("NO12MOC", "SO12MOC"),c("SO3MOC", "SO12MOC"))
 res_hvg <- ks_testeR(pt_hvg, comp_list)
-
 
 

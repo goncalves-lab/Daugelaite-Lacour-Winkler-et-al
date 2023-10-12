@@ -30,7 +30,7 @@ LR_df_CellChat = data.frame(ligand = sapply(pairs_CellChat, function(X){return(X
 
 
 #Preparing the pairing metadata
-load("ovulation.Rdata") #Seurat object created by script create_seurat_object.R
+load("ovulation.Rdata") #Seurat object created by script create_seurat_age_ov.R
 
 paired_id = data.frame() # This table will contain the list of paired oocytes and granulosa cells alongside their age / treatment group
 gc_list = names(ovulation$label)[grep("GC",names(ovulation$label))]
@@ -47,7 +47,6 @@ paired_id$group = paste(ovulation$age[paired_id$GC],ovulation$ovulation[paired_i
 
 #Preparing the count data
 load("NormalizedData.Rdata") #count data normalized accounting for gene length by SCnorm
-#colnames(NormalizedData) = gsub("S0", "SO", colnames(NormalizedData))
 count_matrix = NormalizedData
 rownames(count_matrix) = ensemnl_list_mouse$external_gene_name[match(rownames(count_matrix), ensemnl_list_mouse$ensembl_gene_id)]
 count_matrix = count_matrix[,c(paired_id$OC,paired_id$GC)]
