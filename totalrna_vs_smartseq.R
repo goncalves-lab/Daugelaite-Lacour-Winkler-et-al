@@ -22,22 +22,10 @@ rownames(reads_tot) = sapply(rownames(reads_tot), function(x){strsplit(x, "-")[[
 #smart-seq2 data
 load("ovulation.Rdata") # SMART-seq2 Seurat object made by the script create_seurat_age_ov.R
 
-#Making the pairing metadata table
-paired_id = data.frame()
-gc_list = names(ovulation$label)[grep("GC",names(ovulation$label))]
-oc_list = names(ovulation$label)[grep("OC",names(ovulation$label))]
-for (i in 1:length(gc_list)) {
-  if (length(grep(gsub("GC","OC",gc_list[i]),oc_list))) {
-    paired_id = rbind(paired_id, c(gc_list[i], oc_list[grep(gsub("GC","OC",gc_list[i]),oc_list)]))
-  }
-}
-colnames(paired_id) = c("GC", "OC")
-paired_id$group = paste(ovulation$age[paired_id$GC],ovulation$ovulation[paired_id$GC],sep="_")
-
-gr = c("Y_NO", "Y_SO") # Pick the groups to compare
 
 #Changing to gene name instead of ensemblID
 reads_smart = as.matrix(ovulation@assays$SCT@counts)
+reads_smart = reads_smart[, ovulation$cell == "OC" & ovulation$age == "Y"]
 rownames(reads_smart) = ensemnl_list$external_gene_name[match(rownames(reads_smart), ensemnl_list$ensembl_gene_id)]
 
 
@@ -48,11 +36,11 @@ deA = c("Smc4", "Zp1", "Oosp2")
 
 #------Main-----------
 
-log2FC_smart = log2(rowMeans(reads_smart[,paired_id$OC[paired_id$group=="Y_NO"]]) / rowMeans(reads_smart[,paired_id$OC[paired_id$group=="Y_SO"]]))
+log2FC_smart = log2(rowMeans(reads_smart[,grepl("NO", colnames(reads_smart))]) / rowMeans(reads_smart[,grepl("SO", colnames(reads_smart))]))
 log2FC_tot = log2(rowMeans(reads_tot[,grepl("NO", colnames(reads_tot))]) / rowMeans(reads_tot[,grepl("SO", colnames(reads_tot))]))
 
 #Selecting a few genes that do not respond to the treatment in both technologies
-constant_genes_smart = names(log2FC_smart)[abs(log2FC_smart)<0.008 & is.finite(log2FC_smart)]
+constant_genes_smart = names(log2FC_smart)[abs(log2FC_smart)<0.005 & is.finite(log2FC_smart)]
 constant_genes_tot = names(log2FC_tot)[abs(log2FC_tot)<0.01 & is.finite(log2FC_tot)]
 constant_genes = intersect(constant_genes_smart, constant_genes_tot)
 
@@ -65,7 +53,7 @@ up_genes = ensemnl_list$external_gene_name[match(up_genes, ensemnl_list$ensembl_
 
 
 # Extracting the genes of interest in SMART-seq table
-matr_smart = reads_smart[c(polyA, deA, degraded, up_genes, constant_genes), paired_id$OC[paired_id$group%in%gr]]
+matr_smart = reads_smart[c(polyA, deA, degraded, up_genes, constant_genes), ]
 
 # For each cell in one group, we compute the log2 fold change relative to the average of the other group
 mean_SO = rowMeans(matr_smart[, grepl("SO", colnames(matr_smart))]) + 1
@@ -89,7 +77,7 @@ gaps_row = cumsum(c(length(polyA), length(deA), length(degraded), length(up_gene
 gaps_col = ncol(norm_matr_smart)
 
 anno = data.frame(row.names = colnames(norm_matr), ov = substr(colnames(norm_matr), 1,2))
-anno_color = list(ov = c("SO"= "#81B4A2", "NO" = "#436357"))
+anno_color = list(ov = c("SO"= "#727272", "NO" = "black"))
 
 
 pheatmap::pheatmap(norm_matr, scale = "none", cluster_cols = F, cluster_rows = F, 
@@ -100,11 +88,16 @@ pheatmap::pheatmap(norm_matr, scale = "none", cluster_cols = F, cluster_rows = F
 
 
 #to subset the heatmap
-set.seed(254)
-samps = c(sample(rownames(anno)[1:13], 10, replace = F),
-          sample(rownames(anno)[14:40], 10, replace = F),
-          sample(rownames(anno)[41:65], 10, replace = F),
-          sample(rownames(anno)[66:87], 10, replace = F))
+set.seed(123)
+n_smartN = length(grep("NO", colnames(matr_smart)))
+n_smartS = length(grep("SO", colnames(matr_smart)))
+n_totN = length(grep("NO", colnames(matr_tot)))
+n_totS = length(grep("SO", colnames(matr_tot)))
+n_groups = cumsum(c(n_smartN, n_smartS, n_totN, n_totS))
+samps = c(sample(rownames(anno)[1:n_groups[1]], 10, replace = F),
+          sample(rownames(anno)[(n_groups[1]+1):n_groups[2]], 10, replace = F),
+          sample(rownames(anno)[(n_groups[2]+1):n_groups[3]], 10, replace = F),
+          sample(rownames(anno)[(n_groups[3]+1):n_groups[4]], 10, replace = F))
 
 norm_matr_sub = norm_matr[, samps]
 gaps_row = cumsum(c(length(polyA), length(deA), length(degraded), length(up_genes), length(constant_genes)))
