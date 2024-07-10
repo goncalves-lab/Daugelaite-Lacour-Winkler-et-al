@@ -13,10 +13,12 @@ ann_db$gene_id <- str_replace(ann_db$gene_id,
 ann_db <- ann_db[,c(4,1,2,3)]
 
 load("gc_class.Rdata") #produced using classifier scripts
-bad <- names(gc_class)[gc_class=="YS_bad"]
-bad <- gsub("gc", "e", bad)
 
 load("IVF.RData") #produced in scenic.R script
+
+#getting labels of classified embryos
+bad <- names(gc_class)[gc_class=="YS_bad"]
+bad <- gsub("gc", "e", bad)
 
 good <- names(gc_class)[gc_class=="YS_good"]
 good <- gsub("gc", "e", good)
@@ -31,10 +33,12 @@ metadata_control <- metadata[metadata$condition=="good",]
 metadata_so_bad <- metadata[metadata$condition=="bad",]
 
 
-metadata_control$description <- "normal"
-metadata_so_bad$description <- "malignant_1"
+metadata_control$description <- "SN"
+metadata_so_bad$description <- "S"
 
 metadata <- rbind(metadata_control, metadata_so_bad)
+metadata$description[grep("no", metadata$label)] = "natural"
+metadata$description = paste0(metadata$description, "_", IVF$cell[metadata$label])
 exprs_matrix <- exprs_matrix[,colnames(exprs_matrix)%in%metadata$label]
 
 metadata <- metadata[,c(1,3)]
@@ -56,7 +60,7 @@ infercnv_obj = CreateInfercnvObject(raw_counts_matrix="exprs_matrix.tsv",
                                     annotations_file="metadata.tsv",
                                     delim="\t",
                                     gene_order_file="ann_db.tsv",
-                                    ref_group_names=c("normal"))
+                                    ref_group_names=c("natural_morula", "natural_blastocyst"))
 infercnv_obj = infercnv::run(infercnv_obj,
                              cutoff=1,  # use 1 for smart-seq, 0.1 for 10x-genomics
                              out_dir="output_dir_sub",  # dir is auto-created for storing outputs
