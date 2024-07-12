@@ -1,4 +1,4 @@
-#this script trains and performs classification of GCs cells in SN and S cells using DEG expression
+#this script trains classification of GCs cells in SN and S cells using DEG expression
 library(caret)
 
 #produced in data_preparation_genes.R script
@@ -74,8 +74,8 @@ exprs_svm <- train(label ~ ., data = exprs_trainTransformed,
                  metric = "ROC",
                  tuneLength = 15)
 
-svm_test_prob <- predict(exprs_svm, newdata = head(exprs_testTransformed), type = "prob")
-svm_test <- predict(exprs_svm, newdata = head(exprs_testTransformed))
+svm_test_prob <- predict(exprs_svm, newdata = exprs_testTransformed, type = "prob")
+svm_test <- predict(exprs_svm, newdata = exprs_testTransformed)
 
 confusionMatrix(data = svm_test, reference = label_test)
 postResample(pred = svm_test, obs = label_test)
@@ -91,7 +91,7 @@ exprs_mlp <- train(label ~ ., data = exprs_trainTransformed,
                  metric = "ROC",
                  tuneLength = 15)
 
-mlp_test <- predict(exprs_mlp, newdata = head(exprs_testTransformed))
+mlp_test <- predict(exprs_mlp, newdata = exprs_testTransformed)
 confusionMatrix(data = mlp_test, reference = label_test)
 postResample(pred = mlp_test, obs = label_test)
 
@@ -152,7 +152,7 @@ svm_ga_ctrl <- gafsControl(functions = caretGA, method = "cv", number = 10)
 set.seed(825)
 
 svm_ga_search <- gafs(
-  x = exprs_trainTransformed[,1:47], 
+  x = exprs_trainTransformed[,-ncol(exprs_trainTransformed)], 
   y = exprs_trainTransformed$label,
   iters = 20, 
   gafsControl = svm_ga_ctrl,
@@ -175,7 +175,7 @@ exprs_svm_2 <- train(label ~ ., data = exprs_trainTransformed_2,
                    metric = "ROC",
                    tuneLength = 15)
 
-svm_test_2 <- predict(exprs_svm_2, newdata = head(exprs_testTransformed))
+svm_test_2 <- predict(exprs_svm_2, newdata = exprs_testTransformed)
 
 confusionMatrix(data = svm_test_2, reference = label_test)
 postResample(pred = svm_test_2, obs = label_test)
@@ -185,7 +185,7 @@ postResample(pred = svm_test_2, obs = label_test)
 set.seed(825)
 
 mlp_ga_search <- gafs(
-  x = exprs_trainTransformed[,1:15], 
+  x = exprs_trainTransformed[,-ncol(exprs_trainTransformed)], 
   y = exprs_trainTransformed$label,
   iters = 10, 
   gafsControl = svm_ga_ctrl,
@@ -207,10 +207,10 @@ exprs_mlp_2 <- train(label ~ ., data = exprs_trainTransformed_2,
                    metric = "ROC",
                    tuneLength = 15)
 
-mlp_test_2 <- predict(exprs_mlp_2, newdata = head(exprs_testTransformed))
+mlp_test_2 <- predict(exprs_mlp_2, newdata = exprs_testTransformed)
 
 confusionMatrix(data = mlp_test_2, reference = label_test)
 postResample(pred = mlp_test_2, obs = label_test)
-save(exprs_svm_2, file="exprs_svm_2.Rdata")
+save(exprs_svm, file="exprs_svm_new.Rdata")
 save(exprs_mlp_2, file="exprs_mlp_2.Rdata")
 

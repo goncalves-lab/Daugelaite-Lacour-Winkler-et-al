@@ -6,20 +6,18 @@ library(glmmTMB)
 
 ############################
 #gene matrix preparation
-#produced using dge.R script
+#produced using dge_SNvS.R script
 genes <- read.table("quality_marker_genes.tsv",
                     sep=",", header = T, row.names = 1)
 
 load("IVF.RData") #produced using scenic.R script
 load("ovulation.Rdata")
 
-seurat_m <- merge(IVF, ovulation, merge.data=F)
+seurat_m <- ovulation
 seurat_m[["CellName"]] <- colnames(seurat_m)
 exprs_matrix <- seurat_m@assays$SCT@data
 exprs_matrix <- t(as.matrix(exprs_matrix))
-exprs_matrix <- exprs_matrix[grep("so", rownames(exprs_matrix), ignore.case=T),]
-exprs_matrix <- exprs_matrix[grep("gc", rownames(exprs_matrix), ignore.case=T),]
-exprs_matrix <- exprs_matrix[grep("12M", rownames(exprs_matrix), invert=T),]
+exprs_matrix <- exprs_matrix[grep("SO3MGC", rownames(exprs_matrix), ignore.case=T),]
 seurat_m <- subset(seurat_m, subset = CellName %in% rownames(exprs_matrix))
 seurat_m <- SCTransform(seurat_m)
 exprs_matrix <- seurat_m@assays$SCT@data
@@ -42,7 +40,7 @@ comboInfo <- findLinearCombos(exprs_matrix)
 
 #splitting dataset
 
-load("clusters_Y_consensus.Rdata") #consensus clusters
+load("clusters_Y_consensus.Rdata") #consensus clusters ie agreement between Scenic and Cell communication clusterings
 clusters_consensus <- clusters_consensus[!is.na(clusters_consensus)]
 clusters_consensus <- clusters_consensus[grep("SO", names(clusters_consensus))]
 clusters_consensus=droplevels(clusters_consensus)
@@ -63,11 +61,7 @@ preProcValues <- preProcess(exprs_Train, method = c("center", "scale"))
 exprs_trainTransformed <- predict(preProcValues, exprs_Train)
 exprs_testTransformed <- predict(preProcValues, exprs_Test)
 
-exprs_ivf <- exprs_matrix[grep("3M", rownames(exprs_matrix), invert=T),]
-exprs_ivfTransformed <- predict(preProcValues, exprs_ivf)
 
-
-save(exprs_ivfTransformed, file="exprs_ivfTransformed.Rdata")
 
 exprs_trainTransformed <- merge(exprs_trainTransformed, clusters_df, by.x=0, by.y="cells")
 rownames(exprs_trainTransformed) <- exprs_trainTransformed$Row.names

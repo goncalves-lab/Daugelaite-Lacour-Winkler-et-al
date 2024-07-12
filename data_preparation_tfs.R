@@ -15,6 +15,7 @@ rownames(auc_df) <- gsub("_extended", "", rownames(auc_df))
 load("tfs.Rdata")#produced in scenic_post.R script
 auc_df <- as.data.frame(t(auc_df))
 colnames(auc_df) <- gsub(" ", "", colnames(auc_df))
+ori_rownames = ori_rownames[colnames(auc_df)%in%tfs]
 auc_df <- auc_df[,colnames(auc_df)%in%tfs]
 
 #identifying TF which have significantly different activity in SO good and bad
@@ -31,9 +32,11 @@ load("ovulation.Rdata") #produced using scenic.R script
 mouse_df <- data.frame(cells=colnames(ovulation), mouse=ovulation$mouse)
 auc_tf <- merge(auc_tf, mouse_df, by.x="Row.names", by.y="cells")
 
+auc_tf = auc_tf[, colSums(auc_tf==0)==0]
+
 tf_df_final <- data.frame()
 for(i in seq(from=2, to=ncol(auc_tf)-2)){
-  tf_sig <- auc_tf[,c(i,38, 39)]
+  tf_sig <- auc_tf[,c(i, ncol(auc_tf)-1, ncol(auc_tf))]
   tf_name <- colnames(auc_tf)[i]
   colnames(tf_sig)[1] <- "tf"
   tf_sig <- glmmTMB(tf~label+(1 | mouse), data = tf_sig, family=beta_family())
@@ -44,6 +47,7 @@ for(i in seq(from=2, to=ncol(auc_tf)-2)){
 tf_df_final$p_adj <- p.adjust(tf_df_final$p_value, method = "fdr")
 tf_df_final <- tf_df_final[tf_df_final$p_adj<0.05,]
 
+ori_rownames = ori_rownames[colnames(auc_df)%in%tf_df_final$tf]
 auc_df <- auc_df[,colnames(auc_df)%in%tf_df_final$tf]
 
 #identifying near-zero variance predictors
@@ -52,6 +56,7 @@ nzv <- nearZeroVar(auc_df, saveMetrics= TRUE)
 #identifying correlated predictors
 descrCor <- cor(auc_df)
 highlyCorDescr <- findCorrelation(descrCor, cutoff = .8)
+ori_rownames = ori_rownames[-highlyCorDescr]
 auc_df <- auc_df[,-highlyCorDescr]
 
 #identifying linear dependancies
@@ -74,19 +79,17 @@ preProcValues <- preProcess(auc_Train, method = c("center", "scale"))
 auc_trainTransformed <- predict(preProcValues, auc_Train)
 auc_testTransformed <- predict(preProcValues, auc_Test)
 
-auc_ivf <- auc_df[grep("3M", rownames(auc_df), invert=T),]
-auc_ivfTransformed <- predict(preProcValues, auc_ivf)
-
-save(auc_ivfTransformed, file="auc_ivfTransformed.Rdata")
 
 auc_trainTransformed <- merge(auc_trainTransformed, clusters_df, by.x=0, by.y="cells")
 rownames(auc_trainTransformed) <- auc_trainTransformed$Row.names
 auc_trainTransformed <- auc_trainTransformed[,2:ncol(auc_trainTransformed)]
+colnames(auc_trainTransformed) = c(ori_rownames, "label")
 save(auc_trainTransformed, file="auc_trainTransformed.Rdata")
 
 auc_testTransformed <- merge(auc_testTransformed, clusters_df, by.x=0, by.y="cells")
 rownames(auc_testTransformed) <- auc_testTransformed$Row.names
 auc_testTransformed <- auc_testTransformed[,2:ncol(auc_testTransformed)]
+colnames(auc_testTransformed) = c(ori_rownames, "label")
 
 save(auc_testTransformed, file="auc_testTransformed.Rdata")
 

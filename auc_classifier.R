@@ -1,4 +1,4 @@
-#this script trains and performs classification of GCs cells in SN and S cells using scenic AUC scores
+#this script trains classification of GCs cells in SN and S cells using scenic AUC scores
 
 library(caret)
 library(ggplot2)
@@ -62,7 +62,7 @@ svmControl <- trainControl(method = "repeatedcv",
 ###############
 #model fitting
 ###############
-#different algorithms were tested, based on perfomance stats SVM with Liner Kernel was chosen
+#different algorithms were tested, based on perfomance stats SVM with Linear Kernel was chosen
 #SVM with Linear Kernel
 set.seed(825)
 auc_svm <- train(label ~ ., data = auc_trainTransformed, 
@@ -74,8 +74,8 @@ auc_svm <- train(label ~ ., data = auc_trainTransformed,
                  metric = "ROC",
                  tuneLength = 15)
 
-svm_test_prob <- predict(auc_svm, newdata = head(auc_testTransformed), type = "prob")
-svm_test <- predict(auc_svm, newdata = head(auc_testTransformed))
+svm_test_prob <- predict(auc_svm, newdata = auc_testTransformed, type = "prob")
+svm_test <- predict(auc_svm, newdata = auc_testTransformed)
 
 confusionMatrix(data = svm_test, reference = label_test)
 postResample(pred = svm_test, obs = label_test)
@@ -136,7 +136,7 @@ auc_mlp <- train(label ~ ., data = auc_trainTransformed,
                 metric = "ROC",
                 tuneLength = 15)
 
-mlp_test <- predict(auc_mlp, newdata = head(auc_testTransformed))
+mlp_test <- predict(auc_mlp, newdata = auc_testTransformed)
 confusionMatrix(data = mlp_test, reference = label_test)
 postResample(pred = mlp_test, obs = label_test)
 
@@ -211,7 +211,7 @@ svm_ga_ctrl <- gafsControl(functions = caretGA, method = "cv", number = 10)
 set.seed(825)
 
 svm_ga_search <- gafs(
-  x = auc_trainTransformed[,1:15], 
+  x = auc_trainTransformed[,-ncol(auc_trainTransformed)], 
   y = auc_trainTransformed$label,
   iters = 15, 
   gafsControl = svm_ga_ctrl,
@@ -221,7 +221,7 @@ svm_ga_search <- gafs(
 ) 
 
 label <- auc_trainTransformed$label
-auc_trainTransformed_2 <- auc_trainTransformed[,colnames(auc_trainTransformed)%in%lm_ga_search$optVariables]
+auc_trainTransformed_2 <- auc_trainTransformed[,colnames(auc_trainTransformed)%in%svm_ga_search$optVariables]
 auc_trainTransformed_2$label <- label
 
 set.seed(825)
@@ -234,7 +234,7 @@ auc_svm_2 <- train(label ~ ., data = auc_trainTransformed_2,
                  metric = "ROC",
                  tuneLength = 15)
 
-svm_test_2 <- predict(auc_svm_2, newdata = head(auc_testTransformed))
+svm_test_2 <- predict(auc_svm_2, newdata = auc_testTransformed)
 
 confusionMatrix(data = svm_test_2, reference = label_test)
 postResample(pred = svm_test_2, obs = label_test)
@@ -244,7 +244,7 @@ postResample(pred = svm_test_2, obs = label_test)
 set.seed(825)
 
 mlp_ga_search <- gafs(
-  x = auc_trainTransformed[,1:15], 
+  x = auc_trainTransformed[,-ncol(auc_trainTransformed)], 
   y = auc_trainTransformed$label,
   iters = 10, 
   gafsControl = svm_ga_ctrl,
@@ -266,7 +266,7 @@ auc_mlp_2 <- train(label ~ ., data = auc_trainTransformed_2,
                    metric = "ROC",
                    tuneLength = 15)
 
-mlp_test_2 <- predict(auc_mlp_2, newdata = head(auc_testTransformed))
+mlp_test_2 <- predict(auc_mlp_2, newdata = auc_testTransformed)
 
 confusionMatrix(data = mlp_test_2, reference = label_test)
 postResample(pred = mlp_test_2, obs = label_test)
