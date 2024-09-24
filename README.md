@@ -1,4 +1,7 @@
-Scripts used in "Granulosa cell transcription is similarly impacted by superovulation and aging and predicts early embryonic trajectories", 2024.
+## Citation
+
+If you use our work, please cite: 
+`Daugelaite K, Lacour P, Winkler I, Koch M, Schneider A, Schneider N, Tolkachov A, Nguyen XP, Vilkaite A, Rehnitz J, Odom DT, Goncalves A. (2023) Superovulation and ageing perturb oocyte-granulosa cell transcriptomes and communication. bioRxiv (2023). doi: https://doi.org/10.1101/2023.10.30.563978`
 
 ## From raw counts to R objects
 
