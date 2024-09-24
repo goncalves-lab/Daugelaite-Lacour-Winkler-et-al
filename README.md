@@ -7,6 +7,7 @@ Superovulation and ageing perturb oocyte-granulosa cell transcriptomes and commu
 bioRxiv (2023)
 doi: https://doi.org/10.1101/2023.10.30.563978
 ```
+[![DOI](https://zenodo.org/badge/700427890.svg)](https://zenodo.org/doi/10.5281/zenodo.13832474)
 
 ## From raw counts to R objects
 
