@@ -2,10 +2,10 @@
 
 If you use our work, please cite: 
 ```
-Daugelaite K, Lacour P, Winkler I, Koch M, Schneider A, Schneider N, Tolkachov A, Nguyen XP, Vilkaite A, Rehnitz J, Odom DT, Goncalves A. (2023)
-Superovulation and ageing perturb oocyte-granulosa cell transcriptomes and communication
-bioRxiv (2023)
-doi: https://doi.org/10.1101/2023.10.30.563978
+Daugelaite K, Lacour P, Winkler I, Koch M, Schneider A, Schneider N, Tolkachov A, Nguyen XP, Vilkaite A, Rehnitz J, Odom DT, Goncalves A. (2025)
+Granulosa cell transcription is similarly impacted by superovulation and aging and predicts early embryonic trajectories
+Nat Commun 16, 3658 (2025)
+doi: https://doi.org/10.1038/s41467-025-58451-9
 ```
 [![DOI](https://zenodo.org/badge/700427890.svg)](https://zenodo.org/doi/10.5281/zenodo.13832474)
 
